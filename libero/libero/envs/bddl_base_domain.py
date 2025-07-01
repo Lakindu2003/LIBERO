@@ -740,6 +740,26 @@ class BDDLBaseDomain(SingleArmEnv):
                         joint_ranges=joint_ranges,
                     )
                     self.object_property_initializers.append(property_initializer)
+            elif state[0] == "openratio":
+                if state[1] in self.object_states_dict and hasattr(
+                    self.object_states_dict[state[1]], "set_joint"
+                ):
+                    obj = self.get_object(state[1])
+                    open_ranges = obj.object_properties["articulation"][
+                            "default_open_ranges"
+                        ]
+                    close_ranges = obj.object_properties["articulation"][
+                            "default_open_ranges"
+                        ]
+                    joint_ranges = [(open_ranges[0]+close_ranges[0])*float(state[2])/2, (open_ranges[1]+close_ranges[1])*float(state[2])/2]
+
+
+                    property_initializer = OpenCloseSampler(
+                        name=obj.name,
+                        state_type=state[0],
+                        joint_ranges=joint_ranges,
+                    )
+                    self.object_property_initializers.append(property_initializer)
 
         # Place objects that are on sites
         for state in conditioned_initial_place_state_on_sites:
