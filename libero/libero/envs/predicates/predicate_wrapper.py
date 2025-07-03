@@ -99,6 +99,44 @@ class ConstraintAlwaysAfter(Constraint):
     def expected_arg_types(self):
         return [bool, bool]  # Expecting a tuple of (name, arg)
 
+class ConstraintAfterUntil(Constraint):
+    def __init__(self):
+        super().__init__()
+        self.state = {} 
+
+    def __call__(self, name, *arg):
+        if len(arg) != 2:
+            raise ValueError("ConstraintAfterUntil expects exactly two arguments.")
+        if name not in self.state:
+            self.state[name] = {
+                'started': False,          # Has the first condition been met
+                'until_satisfied': False,  # Has the until condition been met
+                'violated': False          # Has the constraint been violated
+            }
+        
+        trigger_condition, until_condition = arg[0], arg[1]
+        
+        # If we haven't started and trigger condition is true, start monitoring
+        if not self.state[name]['started'] and trigger_condition:
+            self.state[name]['started'] = True
+        
+        # If we've started but haven't been satisfied yet, trigger must remain true
+        if self.state[name]['started'] and not self.state[name]['until_satisfied']:
+            if not trigger_condition:
+                self.state[name]['violated'] = True
+        res = False
+        
+        # If we've started and until condition becomes true, we're satisfied forever
+        if self.state[name]['started'] and until_condition:
+            self.state[name]['until_satisfied'] = True
+            res = True if not self.state[name]['violated'] else False
+
+        return BoolResultWrapper(res, f"result: {res}; started: {self.state[name]['started']}; violated: {self.state[name]['violated']}")
+
+
+    def expected_arg_types(self):
+        return [bool, bool]  # Expecting two boolean arguments
+
 class ConstraintOnce(Constraint):
     def __call__(self, name, *arg):
         if name not in self.state:
