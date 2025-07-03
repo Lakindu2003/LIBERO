@@ -127,7 +127,7 @@ class ConstraintAfterUntil(Constraint):
         res = False
         
         # If we've started and until condition becomes true, we're satisfied forever
-        if self.state[name]['started'] and until_condition:
+        if self.state[name]['started'] and (until_condition or self.state[name]['until_satisfied']):
             self.state[name]['until_satisfied'] = True
             res = True if not self.state[name]['violated'] else False
 
