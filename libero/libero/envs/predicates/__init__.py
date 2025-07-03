@@ -82,6 +82,7 @@ VALIDATE_PREDICATE_FN_DICT.update({
 
     "sequential": Sequential(),
     "watch": Watch(),
+    "interval": Interval(),
 })
 
 
