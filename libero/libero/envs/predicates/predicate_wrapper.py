@@ -159,3 +159,63 @@ class Sequential(StatefulWrapper):
 
     def expected_arg_types(self):
         return [tuple]
+
+class Interval(StatefulWrapper):
+    """
+    A wrapper that evaluates an object/predicate at specified intervals and returns True/False based on 
+    whether the percentage of True states exceeds a specified threshold.
+    
+    Usage: Interval()(name, interval, threshold, arg)
+    Args:
+        name: Unique identifier for this predicate instance
+        interval: The size of the sliding window to consider. (240 predicate calls are made every second)
+        threshold: Float between 0 and 1 representing the required percentage of True states (e.g. 0.7 for 70%)
+        arg: The object or predicate result to evaluate
+    Returns:
+        True if percentage of True states exceeds threshold, False otherwise
+    """
+    def init_by_name(self, name):
+        """Initialize state tracking for a new predicate instance"""
+        if name not in self.state:
+            self.state[name] = {
+                "history": []  # Store evaluation history
+            }
+
+    def __call__(self, name, interval, threshold, arg):
+        """
+        Evaluate at specified intervals with threshold.
+        
+        Args:
+            name (str): Unique identifier for this predicate instance
+            interval (int): Number of recent states to consider
+            threshold (float): Required percentage of True states (0.0 to 1.0)
+            arg: The object/predicate to evaluate
+        Returns:
+            BoolResultWrapper with threshold-based result and history info
+        """
+        if not 0 <= threshold <= 1:
+            raise ValueError("Threshold must be between 0 and 1")
+            
+        self.init_by_name(name)
+        
+        # Add current state to history
+        self.state[name]["history"].append(bool(arg))
+        
+        # Keep only the latest interval states
+        if len(self.state[name]["history"]) > interval:
+            self.state[name]["history"] = self.state[name]["history"][-interval:]
+            
+        # Calculate percentage of True states
+        true_count = sum(1 for x in self.state[name]["history"] if x)
+        total_count = len(self.state[name]["history"])
+        true_percentage = true_count / total_count
+        exceeds_threshold = true_percentage >= threshold
+        
+        return BoolResultWrapper(
+            exceeds_threshold,
+            f"True percentage: {true_percentage:.2%}) "
+        )
+
+    def expected_arg_types(self) -> List[type]:
+        """Define expected argument types"""
+        return [int, float, bool]  # The input arg should be a boolean value
